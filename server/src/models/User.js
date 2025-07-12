@@ -15,6 +15,10 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  username: {
+    type: String,
+    required: true,
+  },
   location: String,
   profilePhoto: String, // base64 image string (Data URL)
   skillsOffered: [String],
