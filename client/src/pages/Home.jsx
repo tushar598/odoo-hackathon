@@ -1,4 +1,3 @@
-// frontend/src/pages/Home.js
 import { useEffect, useState } from 'react';
 import api from '../services/api';
 import SkillCard from '../components/SkillCard';
@@ -11,8 +10,17 @@ const Home = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const search = async () => {
-    const res = await api.get(`/user/search?skill=${query}`);
-    setUsers(res.data);
+    try {
+      const endpoint = query.trim()
+        ? `/user/search?skill=${encodeURIComponent(query)}`
+        : '/user/search';
+      const res = await api.get(endpoint);
+      // Only show public profiles
+      const publicProfiles = res.data.filter((user) => user.isPublic);
+      setUsers(publicProfiles);
+    } catch (err) {
+      console.error('Search error:', err);
+    }
   };
 
   const checkLogin = async () => {
@@ -38,16 +46,40 @@ const Home = () => {
   };
 
   return (
-    <div>
-      <h1>Find Skill Swap Partners</h1>
-      <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search skill..." />
-      <button onClick={search}>Search</button>
-      <div className="card-grid">
-        {users.map((user) => (
-          <SkillCard key={user._id} user={user} onRequestSwap={handleRequestSwap} />
-        ))}
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      <h1 className="text-2xl font-semibold text-gray-800 mb-6">Find Skill Swap Partners</h1>
+
+      <div className="flex gap-4 mb-6">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search skill..."
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-600 text-sm"
+        />
+        <button
+          onClick={search}
+          className="bg-purple-700 hover:bg-purple-800 text-white px-4 py-2 rounded-md text-sm font-semibold transition"
+        >
+          Search
+        </button>
       </div>
-      {selectedUser && <SwapRequestModal user={selectedUser} onClose={() => setSelectedUser(null)} />}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        {users.length === 0 ? (
+          <p className="text-gray-500 col-span-full text-center">
+            {query ? `No users found for "${query}".` : 'No public users available.'}
+          </p>
+        ) : (
+          users.map((user) => (
+            <SkillCard key={user._id} user={user} onRequestSwap={handleRequestSwap} />
+          ))
+        )}
+      </div>
+
+      {selectedUser && (
+        <SwapRequestModal user={selectedUser} onClose={() => setSelectedUser(null)} />
+      )}
     </div>
   );
 };
